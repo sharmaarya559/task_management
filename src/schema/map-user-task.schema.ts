@@ -7,7 +7,7 @@ export class Map_User_Task {
   assigned_by: string;
 
   @Prop()
-  manager: mongoose.Types.ObjectId;
+  manager_id: mongoose.Types.ObjectId;
 
   @Prop()
   assigned_to: mongoose.Types.ObjectId;

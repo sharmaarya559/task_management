@@ -1,25 +1,28 @@
-import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, Injectable, UnauthorizedException } from "@nestjs/common";
 import {
   ErrorMessages,
   SuccessMessages,
-} from 'src/utils/response-message.helper';
-import { AdminLoginDto } from './dto/login.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { Admin, AdminDocument } from 'src/schema/admin.schema';
-import mongoose, { Model } from 'mongoose';
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
-import { Request, Response } from 'express';
-import { CustomException } from 'src/exception/custom.exception';
-import { User, UserDocument } from 'src/schema/user.schema';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { Task, TaskDocument } from 'src/schema/task.schema';
-import { UpdateTaskDto } from './dto/update-task.dto';
+} from "src/utils/response-message.helper";
+import { AdminLoginDto } from "./dto/login.dto";
+import { InjectModel } from "@nestjs/mongoose";
+import { Admin, AdminDocument } from "src/schema/admin.schema";
+import mongoose, { Model } from "mongoose";
+import * as bcrypt from "bcrypt";
+import { JwtService } from "@nestjs/jwt";
+import { Request, Response } from "express";
+import { CustomException } from "src/exception/custom.exception";
+import { User, UserDocument } from "src/schema/user.schema";
+import { CreateTaskDto } from "./dto/create-task.dto";
+import { Task, TaskDocument } from "src/schema/task.schema";
+import { UpdateTaskDto } from "./dto/update-task.dto";
 import {
   Map_User_Task,
   Map_User_Task_Document,
-} from 'src/schema/map-user-task.schema';
-import { AssignTaskDto } from './dto/assign-task.dto';
+} from "src/schema/map-user-task.schema";
+import { AssignTaskDto } from "./dto/assign-task.dto";
+import { CreateTeamDto } from "./dto/create-team.dto";
+import { Team, TeamDocument } from "src/schema/team.schema";
+import { UpdateTeamDto } from "./dto/update-team.dto";
 
 @Injectable()
 export class AdminService {
@@ -30,6 +33,8 @@ export class AdminService {
     @InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>,
     @InjectModel(Map_User_Task.name)
     private readonly mapUserTaskModel: Model<Map_User_Task_Document>,
+    @InjectModel(Team.name)
+    private readonly teamModel: Model<TeamDocument>
   ) {}
 
   /****************************ADMIN LOGIN**************************/
@@ -38,28 +43,28 @@ export class AdminService {
       const admin = await this.adminModel.findOne({ email: body.email });
       if (!admin) {
         throw new UnauthorizedException(
-          ErrorMessages?.INVALID_CREDENTIALS[lang || 'EN'],
+          ErrorMessages?.INVALID_CREDENTIALS[lang || "EN"]
         );
       }
       const isMatch = await bcrypt.compare(body?.password, admin?.password);
 
       if (!isMatch) {
         throw new UnauthorizedException(
-          ErrorMessages?.INVALID_CREDENTIALS[lang || 'EN'],
+          ErrorMessages?.INVALID_CREDENTIALS[lang || "EN"]
         );
       }
       const payload = {
         id: admin?._id,
-        role: 'admin',
+        role: "admin",
       };
       const token = await this.jwtService.sign(payload, {
         secret: process.env.JWT_SECRET_KEY,
-        expiresIn: '24h',
+        expiresIn: "24h",
       });
       return res.status(HttpStatus.CREATED).json({
         success: true,
         statusCode: 201,
-        message: SuccessMessages.LOGIN_SUCCESSFULL[lang || 'EN'],
+        message: SuccessMessages.LOGIN_SUCCESSFULL[lang || "EN"],
         token,
       });
     } catch (error) {
@@ -70,11 +75,11 @@ export class AdminService {
   /****************************CREATE MANAGER***********************/
   async createManager(lang: string, user_id: string, res: Response) {
     try {
-      await this.userModel.findByIdAndUpdate(user_id, { role: 'manager' });
+      await this.userModel.findByIdAndUpdate(user_id, { role: "manager" });
       return res.status(HttpStatus.CREATED).json({
         success: true,
         statusCode: 201,
-        message: SuccessMessages.LOGIN_SUCCESSFULL[lang || 'EN'],
+        message: SuccessMessages.LOGIN_SUCCESSFULL[lang || "EN"],
       });
     } catch (error) {
       throw new CustomException(error, error.status);
@@ -82,16 +87,16 @@ export class AdminService {
   }
 
   /****************************GET ALL USERS************************/
-  async getAllUsers(page = 1, limit = 10, search = ' ', res: Response) {
+  async getAllUsers(page = 1, limit = 10, search = " ", res: Response) {
     try {
       const data = await this.userModel
         .find({
           $or: [
-            { full_name: { $regex: `.*${search}.*`, $options: 'i' } },
-            { phone_number: { $regex: `.*${search}.*`, $options: 'i' } },
-            { username: { $regex: `.*${search}.*`, $options: 'i' } },
-            { country: { $regex: `.*${search}.*`, $options: 'i' } },
-            { city: { $regex: `.*${search}.*`, $options: 'i' } },
+            { full_name: { $regex: `.*${search}.*`, $options: "i" } },
+            { phone_number: { $regex: `.*${search}.*`, $options: "i" } },
+            { username: { $regex: `.*${search}.*`, $options: "i" } },
+            { country: { $regex: `.*${search}.*`, $options: "i" } },
+            { city: { $regex: `.*${search}.*`, $options: "i" } },
           ],
         })
         .select({ password: 0 })
@@ -99,11 +104,11 @@ export class AdminService {
         .limit(Number(limit));
       const total = await this.userModel.countDocuments({
         $or: [
-          { full_name: { $regex: `.*${search}.*`, $options: 'i' } },
-          { phone_number: { $regex: `.*${search}.*`, $options: 'i' } },
-          { username: { $regex: `.*${search}.*`, $options: 'i' } },
-          { country: { $regex: `.*${search}.*`, $options: 'i' } },
-          { city: { $regex: `.*${search}.*`, $options: 'i' } },
+          { full_name: { $regex: `.*${search}.*`, $options: "i" } },
+          { phone_number: { $regex: `.*${search}.*`, $options: "i" } },
+          { username: { $regex: `.*${search}.*`, $options: "i" } },
+          { country: { $regex: `.*${search}.*`, $options: "i" } },
+          { city: { $regex: `.*${search}.*`, $options: "i" } },
         ],
       });
       return res.status(HttpStatus.OK).json({
@@ -127,7 +132,7 @@ export class AdminService {
       return res.status(HttpStatus.CREATED).json({
         success: true,
         statusCode: 201,
-        message: SuccessMessages.USER_BLOCKED[lang || 'EN'],
+        message: SuccessMessages.USER_BLOCKED[lang || "EN"],
       });
     } catch (error) {
       throw new CustomException(error, error.status);
@@ -141,7 +146,7 @@ export class AdminService {
       return res.status(HttpStatus.CREATED).json({
         success: true,
         statusCode: 201,
-        message: SuccessMessages.USER_UNBLOCKED[lang || 'EN'],
+        message: SuccessMessages.USER_UNBLOCKED[lang || "EN"],
       });
     } catch (error) {
       throw new CustomException(error, error.status);
@@ -155,7 +160,7 @@ export class AdminService {
       return res.status(HttpStatus.CREATED).json({
         success: true,
         statusCode: 201,
-        message: SuccessMessages?.TASK_CREATED[lang || 'EN'],
+        message: SuccessMessages?.TASK_CREATED[lang || "EN"],
       });
     } catch (error) {
       throw new CustomException(error, error.status);
@@ -167,14 +172,14 @@ export class AdminService {
     lang: string,
     task_id: string,
     body: UpdateTaskDto,
-    res: Response,
+    res: Response
   ) {
     try {
       await this.taskModel.findByIdAndUpdate(task_id, body);
       return res.status(HttpStatus.CREATED).json({
         success: true,
         statusCode: 201,
-        message: SuccessMessages?.TASK_UPDATED[lang || 'EN'],
+        message: SuccessMessages?.TASK_UPDATED[lang || "EN"],
       });
     } catch (error) {
       throw new CustomException(error, error.status);
@@ -188,7 +193,7 @@ export class AdminService {
       return res.status(HttpStatus.CREATED).json({
         success: true,
         statusCode: 201,
-        message: SuccessMessages?.TASK_DELETED[lang || 'EN'],
+        message: SuccessMessages?.TASK_DELETED[lang || "EN"],
       });
     } catch (error) {
       throw new CustomException(error, error.status);
@@ -201,14 +206,14 @@ export class AdminService {
     page: number,
     limit: number,
     search: string,
-    res: Response,
+    res: Response
   ) {
     try {
       const data = await this.taskModel
         .find({
           $or: [
-            { title: { $regex: `.*${search}.*`, $options: 'i' } },
-            { description: { $regex: `.*${search}.*`, $options: 'i' } },
+            { title: { $regex: `.*${search}.*`, $options: "i" } },
+            { description: { $regex: `.*${search}.*`, $options: "i" } },
           ],
         })
         .select({ password: 0 })
@@ -216,8 +221,8 @@ export class AdminService {
         .limit(Number(limit));
       const total = await this.taskModel.countDocuments({
         $or: [
-          { title: { $regex: `.*${search}.*`, $options: 'i' } },
-          { description: { $regex: `.*${search}.*`, $options: 'i' } },
+          { title: { $regex: `.*${search}.*`, $options: "i" } },
+          { description: { $regex: `.*${search}.*`, $options: "i" } },
         ],
       });
       return res.status(HttpStatus.OK).json({
@@ -238,15 +243,15 @@ export class AdminService {
   async assignTask(lang: string, body: AssignTaskDto, res: Response) {
     try {
       await new this.mapUserTaskModel({
-        assigned_by: 'admin',
-        manager: new mongoose.Types.ObjectId(body?.manager_id),
+        assigned_by: "admin",
+        manager_id: new mongoose.Types.ObjectId(body?.manager_id),
         assigned_to: new mongoose.Types.ObjectId(body?.user_id),
         task_id: new mongoose.Types.ObjectId(body?.task_id),
       });
       return res.status(HttpStatus.CREATED).json({
         success: true,
         statusCode: 201,
-        message: SuccessMessages?.TASK_ASSIGNED[lang || 'EN'],
+        message: SuccessMessages?.TASK_ASSIGNED[lang || "EN"],
       });
     } catch (error) {
       throw new CustomException(error, error.status);
@@ -260,7 +265,55 @@ export class AdminService {
       return res.status(HttpStatus.CREATED).json({
         success: true,
         statusCode: 201,
-        message: SuccessMessages?.ASSIGNED_TASK_DELETED[lang || 'EN'],
+        message: SuccessMessages?.ASSIGNED_TASK_DELETED[lang || "EN"],
+      });
+    } catch (error) {
+      throw new CustomException(error, error.status);
+    }
+  }
+
+  /***************************CREATE TEAM****************************/
+  async createTeam(lang: string, body: CreateTeamDto, res: Response) {
+    try {
+      const users = body?.users.map(
+        (item) => new mongoose.Types.ObjectId(item)
+      );
+      await new this.teamModel({
+        manager_id: new mongoose.Types.ObjectId(body?.manager_id),
+        users,
+      }).save();
+      return res.status(HttpStatus.CREATED).json({
+        success: true,
+        statusCode: 201,
+        message: SuccessMessages?.TEAM_CREATED[lang || "EN"],
+      });
+    } catch (error) {
+      throw new CustomException(error, error.status);
+    }
+  }
+
+  /***************************UPDATE TEAM****************************/
+  async updateTeam(
+    lang: string,
+    team_id: string,
+    body: UpdateTeamDto,
+    res: Response
+  ) {
+    try {
+      const data = {};
+      if (body?.users) {
+        data["users"] = body?.users.map(
+          (item) => new mongoose.Types.ObjectId(item)
+        );
+      }
+      if (body?.manager_id) {
+        data["manager_id"] = new mongoose.Types.ObjectId(body?.manager_id);
+      }
+      await this.teamModel.findByIdAndUpdate(team_id, data);
+      return res.status(HttpStatus.CREATED).json({
+        success: true,
+        statusCode: 201,
+        message: SuccessMessages?.TEAM_UPDATED[lang || "EN"],
       });
     } catch (error) {
       throw new CustomException(error, error.status);
